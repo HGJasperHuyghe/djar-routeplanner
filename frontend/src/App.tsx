@@ -27,7 +27,7 @@ export default function App() {
     runOptimize,
   } = useAppState();
 
-  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null!);
 
   const geocodedStopCount = stops.filter((s) => !s.geocodeFailed).length;
   const canOptimize = geocodedStopCount >= 2;

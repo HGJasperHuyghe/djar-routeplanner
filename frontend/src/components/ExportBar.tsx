@@ -3,12 +3,13 @@ import type { OptimizeResponse, Stop } from '../types';
 import { buildGoogleMapsUrl, exportCsv, exportPdf } from '../lib/exportUtils';
 import { buildShareUrl } from '../lib/share';
 import type { SharedAppState } from '../types';
+import type { RefObject } from 'react';
 
 interface ExportBarProps {
   stops: Stop[];
   route: OptimizeResponse | null;
   depotId: string | null;
-  mapContainerRef: React.RefObject<HTMLDivElement>;
+  mapContainerRef: RefObject<HTMLDivElement>;
 }
 
 export function ExportBar({ stops, route, depotId, mapContainerRef }: ExportBarProps) {

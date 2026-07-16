@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import type { OptimizeResponse, Stop } from '../types';
+import type { RefObject } from 'react';
 
 function numberedIcon(n: number, isDepot: boolean, failed: boolean) {
   const bg = failed ? '#ba1a1a' : isDepot ? '#E6855B' : '#004244';
@@ -38,7 +39,7 @@ interface MapPanelProps {
   stops: Stop[];
   route: OptimizeResponse | null;
   depotId?: string | null;
-  mapContainerRef?: React.RefObject<HTMLDivElement>;
+  mapContainerRef?: RefObject<HTMLDivElement>;
 }
 
 export function MapPanel({ stops, route, depotId, mapContainerRef }: MapPanelProps) {
@@ -54,7 +55,7 @@ export function MapPanel({ stops, route, depotId, mapContainerRef }: MapPanelPro
     return route.geometry.coordinates.map(([lon, lat]) => [lat, lon]);
   }, [route]);
 
-  const internalRef = useRef<HTMLDivElement>(null);
+  const internalRef = useRef<HTMLDivElement>(null!);
   const containerRef = mapContainerRef ?? internalRef;
 
   return (
