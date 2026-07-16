@@ -3,7 +3,11 @@
 Web app for delivery/route planning: enter stops (manually or via CSV), get the
 shortest route between them, see it on a map with total distance/time, and
 export it as PDF / Google Maps link / CSV. No login, no server-side storage —
-everything lives in the browser, with an optional shareable link.
+everything lives in the browser, with an optional shareable link. 
+
+--
+
+I made this simple app working for djar (www.djar.fit)
 
 ## Stack
 - `frontend/` — React + Vite + TypeScript, Tailwind (DJAR design tokens), Leaflet map
