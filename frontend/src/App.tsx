@@ -35,20 +35,33 @@ export default function App() {
   return (
     <div className="min-h-screen bg-soft-shell pb-16">
       <header className="border-b border-outline-variant/60 bg-pure-white/85 backdrop-blur-overlay">
-        <div className="mx-auto flex max-w-content items-center justify-between px-margin-mobile py-4 sm:px-margin-desktop">
-          <div>
-            <h1 className="text-headline-lg-mobile sm:text-headline-lg text-deep-teal">DJAR Route Planner</h1>
-            <p className="text-body-md text-on-surface-variant">Plan, optimize, and export delivery routes</p>
+        <div className="mx-auto flex max-w-content items-center justify-between gap-4 px-margin-mobile py-4 sm:px-margin-desktop">
+          <div className="flex items-center gap-3">
+            <img
+              src="/favicon.svg"
+              alt="DJAR"
+              className="h-11 w-11 shrink-0 rounded-2xl border border-outline-variant/40 bg-pure-white p-2 shadow-card"
+            />
+            <div>
+              <h1 className="text-headline-lg-mobile sm:text-headline-lg text-deep-teal">DJAR Route Planner</h1>
+              <p className="text-body-md text-on-surface-variant">Plan, optimize, and export delivery routes</p>
+            </div>
           </div>
         </div>
       </header>
 
       <main className="mx-auto flex max-w-content flex-col gap-6 px-margin-mobile pt-6 sm:px-margin-desktop">
-        <section className="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <section className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
           <div className="flex-1">
             <AddressForm onAdd={addStop} />
           </div>
-          <CsvImportDialog onImport={addStops} />
+          <div className="djar-card flex items-center justify-between gap-3 p-4">
+            <div className="min-w-0">
+              <p className="djar-label mb-1">Bulk import</p>
+              <p className="text-body-md text-on-surface-variant">Upload a CSV to add multiple stops at once.</p>
+            </div>
+            <CsvImportDialog onImport={addStops} />
+          </div>
         </section>
 
         <section className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(320px,420px)_1fr]">
