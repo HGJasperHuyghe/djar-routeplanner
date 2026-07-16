@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body {
+    @apply bg-soft-shell text-on-surface;
+  }
+
+  body {
+    @apply font-body;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-heading;
+  }
+}
+
+@layer components {
+  .djar-card {
+    @apply rounded-lg bg-pure-white shadow-card;
+  }
+
+  .djar-label {
+    @apply text-label-sm font-heading uppercase tracking-wide text-on-surface-variant;
+  }
+
+  .djar-input {
+    @apply w-full rounded border border-outline-variant bg-pure-white px-3 py-2 text-body-md text-on-surface outline-none transition-colors placeholder:text-outline focus:border-2 focus:border-deep-teal;
+  }
+
+  .djar-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded px-4 py-2 text-label-md font-heading uppercase tracking-wide transition-all disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .djar-btn-primary {
+    @apply djar-btn bg-deep-teal text-white hover:-translate-y-0.5 hover:bg-primary-container active:translate-y-0;
+  }
+
+  .djar-btn-accent {
+    @apply djar-btn bg-kinetic-orange text-white hover:-translate-y-0.5 hover:bg-secondary-container active:translate-y-0;
+  }
+
+  .djar-btn-ghost {
+    @apply djar-btn border border-outline-variant bg-transparent text-deep-teal hover:bg-surface-container-low;
+  }
+
+  .djar-chip {
+    @apply inline-flex items-center gap-1 rounded-full bg-deep-teal/10 px-3 py-1 text-label-sm font-heading text-deep-teal;
+  }
+
+  .djar-chip-orange {
+    @apply inline-flex items-center gap-1 rounded-full bg-kinetic-orange/10 px-3 py-1 text-label-sm font-heading text-secondary;
+  }
+
+  .djar-chip-error {
+    @apply inline-flex items-center gap-1 rounded-full bg-error/10 px-3 py-1 text-label-sm font-heading text-error;
+  }
+}

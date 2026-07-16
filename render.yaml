@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: djar-routeplanner
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm install --prefix backend && npm install --prefix frontend && npm run build
+    startCommand: npm start --prefix backend
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
