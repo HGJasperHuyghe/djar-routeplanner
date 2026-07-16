@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     region: frankfurt
-    buildCommand: npm install --prefix backend && npm install --prefix frontend && npm run build
+    buildCommand: cd backend && npm ci --include=dev && npm run build && cd ../frontend && npm ci --include=dev && npm run build
     startCommand: npm start --prefix backend
     healthCheckPath: /api/health
     envVars:
