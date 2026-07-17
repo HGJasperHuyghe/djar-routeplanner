@@ -71,13 +71,29 @@ const initialState: State = {
   startTime: '08:00',
 };
 
+/**
+ * DJAR's own address, pre-filled as the default depot for a fresh session so
+ * the user doesn't have to type it every time. Coordinates are geocoded
+ * ahead of time (not looked up on every load) — Nominatim doesn't have the
+ * exact unit "15B" indexed, so this resolves to "15C" in the same
+ * industrial park, a few dozen meters off; still labeled with the real
+ * address, and like any stop it can be corrected via "Fix" or removed.
+ */
+const DEFAULT_DEPOT_STOP: Stop = {
+  id: 'djar-depot-default',
+  label: 'DJAR — Industriepark-Drongen 15B, 9031 Drongen, België',
+  lat: 51.042834,
+  lon: 3.5946704,
+};
+
 export function useAppState() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [optimizing, setOptimizing] = useState(false);
   const [optimizeError, setOptimizeError] = useState<string | null>(null);
   const hydratedFromUrl = useRef(false);
 
-  // Hydrate from URL hash on first mount (shareable link).
+  // Hydrate from URL hash on first mount (shareable link); otherwise seed a
+  // fresh session with DJAR's own address as the default depot.
   useEffect(() => {
     if (hydratedFromUrl.current) return;
     hydratedFromUrl.current = true;
@@ -92,6 +108,11 @@ export function useAppState() {
           roundTrip: false,
           startTime: shared.startTime ?? '08:00',
         },
+      });
+    } else {
+      dispatch({
+        type: 'HYDRATE',
+        state: { ...initialState, stops: [DEFAULT_DEPOT_STOP], depotId: DEFAULT_DEPOT_STOP.id },
       });
     }
   }, []);
