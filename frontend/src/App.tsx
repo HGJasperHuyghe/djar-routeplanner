@@ -14,6 +14,7 @@ export default function App() {
     depotId,
     route,
     roundTrip,
+    startTime,
     optimizing,
     optimizeError,
     setOptimizeError,
@@ -23,6 +24,7 @@ export default function App() {
     updateStop,
     setDepot,
     setRoundTrip,
+    setStartTime,
     reorderAndReoptimize,
     runOptimize,
   } = useAppState();
@@ -67,18 +69,32 @@ export default function App() {
         <section className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(320px,420px)_1fr]">
           <div className="flex flex-col gap-4">
             <div className="djar-card flex flex-col gap-3 p-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-headline-md">Stops ({stops.length})</h2>
-                <label className="flex items-center gap-2 text-label-sm text-on-surface-variant">
-                  <input
-                    type="checkbox"
-                    checked={roundTrip}
-                    onChange={(e) => setRoundTrip(e.target.checked)}
-                    className="h-4 w-4 accent-deep-teal"
-                  />
-                  Round trip
-                </label>
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2 text-label-sm text-on-surface-variant">
+                    Departs
+                    <input
+                      type="time"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      className="djar-input w-auto py-1"
+                    />
+                  </label>
+                  <label className="flex items-center gap-2 text-label-sm text-on-surface-variant">
+                    <input
+                      type="checkbox"
+                      checked={roundTrip}
+                      onChange={(e) => setRoundTrip(e.target.checked)}
+                      className="h-4 w-4 accent-deep-teal"
+                    />
+                    Round trip
+                  </label>
+                </div>
               </div>
+              <p className="text-label-sm text-on-surface-variant">
+                Stops with a pickup window are re-ordered to fit their hours — set a window per stop below.
+              </p>
 
               {!depotId && stops.length > 0 && (
                 <p className="text-label-sm text-on-surface-variant">
@@ -113,7 +129,7 @@ export default function App() {
           <div className="flex flex-col gap-4">
             <MapPanel stops={stops} route={route} depotId={depotId} mapContainerRef={mapContainerRef} />
             <RouteSummary route={route} stops={stops} />
-            <ExportBar stops={stops} route={route} depotId={depotId} mapContainerRef={mapContainerRef} />
+            <ExportBar stops={stops} route={route} depotId={depotId} startTime={startTime} mapContainerRef={mapContainerRef} />
           </div>
         </section>
       </main>

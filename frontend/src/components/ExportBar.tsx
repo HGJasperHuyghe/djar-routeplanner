@@ -9,17 +9,18 @@ interface ExportBarProps {
   stops: Stop[];
   route: OptimizeResponse | null;
   depotId: string | null;
+  startTime: string;
   mapContainerRef: RefObject<HTMLDivElement>;
 }
 
-export function ExportBar({ stops, route, depotId, mapContainerRef }: ExportBarProps) {
+export function ExportBar({ stops, route, depotId, startTime, mapContainerRef }: ExportBarProps) {
   const [copying, setCopying] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
   const hasStops = stops.length >= 2;
   const gmapsUrl = hasStops ? buildGoogleMapsUrl(stops, route) : '';
 
   async function handleShare() {
-    const shared: SharedAppState = { v: 1, stops, depotId, route };
+    const shared: SharedAppState = { v: 1, stops, depotId, route, startTime };
     const url = buildShareUrl(shared);
     setCopying(true);
     try {

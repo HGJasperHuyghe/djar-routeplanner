@@ -9,6 +9,7 @@ interface State {
   depotId: string | null;
   route: OptimizeResponse | null;
   roundTrip: boolean;
+  startTime: string;
 }
 
 type Action =
@@ -20,6 +21,7 @@ type Action =
   | { type: 'REORDER_NON_DEPOT'; orderedIds: string[] }
   | { type: 'SET_ROUTE'; route: OptimizeResponse | null }
   | { type: 'SET_ROUND_TRIP'; roundTrip: boolean }
+  | { type: 'SET_START_TIME'; startTime: string }
   | { type: 'HYDRATE'; state: State };
 
 function reducer(state: State, action: Action): State {
@@ -52,6 +54,8 @@ function reducer(state: State, action: Action): State {
       return { ...state, route: action.route };
     case 'SET_ROUND_TRIP':
       return { ...state, roundTrip: action.roundTrip, route: null };
+    case 'SET_START_TIME':
+      return { ...state, startTime: action.startTime, route: null };
     case 'HYDRATE':
       return action.state;
     default:
@@ -64,6 +68,7 @@ const initialState: State = {
   depotId: null,
   route: null,
   roundTrip: false,
+  startTime: '08:00',
 };
 
 export function useAppState() {
@@ -85,6 +90,7 @@ export function useAppState() {
           depotId: shared.depotId,
           route: shared.route,
           roundTrip: false,
+          startTime: shared.startTime ?? '08:00',
         },
       });
     }
@@ -101,11 +107,12 @@ export function useAppState() {
       stops: state.stops,
       depotId: state.depotId,
       route: state.route,
+      startTime: state.startTime,
     };
     const hash = encodeStateToHash(shared);
     const newUrl = `${window.location.pathname}${window.location.search}#${hash}`;
     history.replaceState(null, '', newUrl);
-  }, [state.stops, state.depotId, state.route]);
+  }, [state.stops, state.depotId, state.route, state.startTime]);
 
   const orderedNonDepotIds = state.stops.filter((s) => s.id !== state.depotId).map((s) => s.id);
 
@@ -118,12 +125,20 @@ export function useAppState() {
       setOptimizing(true);
       setOptimizeError(null);
       try {
-        const stopsPayload = state.stops.map(({ id, label, lat, lon }) => ({ id, label, lat, lon }));
+        const stopsPayload = state.stops.map(({ id, label, lat, lon, timeWindowStart, timeWindowEnd }) => ({
+          id,
+          label,
+          lat,
+          lon,
+          timeWindowStart,
+          timeWindowEnd,
+        }));
         const result = await optimizeRoute({
           stops: stopsPayload,
           startStopId: state.depotId ?? undefined,
           roundTrip: state.roundTrip,
           lockOrder: opts.lockOrder,
+          startTime: state.startTime,
         });
         dispatch({ type: 'SET_ROUTE', route: result });
       } catch (err) {
@@ -133,7 +148,7 @@ export function useAppState() {
         setOptimizing(false);
       }
     },
-    [state.stops, state.depotId, state.roundTrip],
+    [state.stops, state.depotId, state.roundTrip, state.startTime],
   );
 
   const addStop = useCallback((stop: Stop) => dispatch({ type: 'ADD_STOP', stop }), []);
@@ -142,6 +157,7 @@ export function useAppState() {
   const updateStop = useCallback((id: string, patch: Partial<Stop>) => dispatch({ type: 'UPDATE_STOP', id, patch }), []);
   const setDepot = useCallback((id: string | null) => dispatch({ type: 'SET_DEPOT', id }), []);
   const setRoundTrip = useCallback((roundTrip: boolean) => dispatch({ type: 'SET_ROUND_TRIP', roundTrip }), []);
+  const setStartTime = useCallback((startTime: string) => dispatch({ type: 'SET_START_TIME', startTime }), []);
 
   const reorderNonDepot = useCallback(
     (orderedIds: string[]) => {
@@ -170,12 +186,20 @@ export function useAppState() {
       setOptimizing(true);
       setOptimizeError(null);
       try {
-        const stopsPayload = newStops.map(({ id, label, lat, lon }) => ({ id, label, lat, lon }));
+        const stopsPayload = newStops.map(({ id, label, lat, lon, timeWindowStart, timeWindowEnd }) => ({
+          id,
+          label,
+          lat,
+          lon,
+          timeWindowStart,
+          timeWindowEnd,
+        }));
         const result = await optimizeRoute({
           stops: stopsPayload,
           startStopId: state.depotId ?? undefined,
           roundTrip: state.roundTrip,
           lockOrder: true,
+          startTime: state.startTime,
         });
         dispatch({ type: 'SET_ROUTE', route: result });
       } catch (err) {
@@ -185,7 +209,7 @@ export function useAppState() {
         setOptimizing(false);
       }
     },
-    [state.stops, state.depotId, state.roundTrip],
+    [state.stops, state.depotId, state.roundTrip, state.startTime],
   );
 
   return {
@@ -193,6 +217,7 @@ export function useAppState() {
     depotId: state.depotId,
     route: state.route,
     roundTrip: state.roundTrip,
+    startTime: state.startTime,
     orderedNonDepotIds,
     optimizing,
     optimizeError,
@@ -203,6 +228,7 @@ export function useAppState() {
     updateStop,
     setDepot,
     setRoundTrip,
+    setStartTime,
     reorderNonDepot,
     reorderAndReoptimize,
     runOptimize,

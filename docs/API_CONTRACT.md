@@ -52,12 +52,13 @@ Request:
 {
   "stops": [
     { "id": "s1", "label": "Depot", "lat": 52.37, "lon": 4.89 },
-    { "id": "s2", "label": "Stop A", "lat": 52.36, "lon": 4.90 },
+    { "id": "s2", "label": "Stop A", "lat": 52.36, "lon": 4.90, "timeWindowStart": "09:00", "timeWindowEnd": "11:00" },
     { "id": "s3", "label": "Stop B", "lat": 52.35, "lon": 4.88 }
   ],
   "startStopId": "s1",
   "roundTrip": false,
-  "lockOrder": false
+  "lockOrder": false,
+  "startTime": "08:00"
 }
 ```
 - `startStopId` optional, defaults to `stops[0].id`. Ignored when `lockOrder: true`
@@ -65,14 +66,22 @@ Request:
 - `roundTrip` optional, defaults to `false` — if `true`, the cost of returning
   to the start is included in optimization and in the totals/geometry.
 - `lockOrder` optional, defaults to `false`.
+- `timeWindowStart`/`timeWindowEnd` optional per stop, `"HH:mm"` 24h format —
+  the hours during which that stop can be visited (e.g. a pickup window).
+  When any stop has one, the optimizer (unless `lockOrder: true`) prefers
+  tours that arrive within every stop's window over ones that are merely
+  shorter, re-deriving the best order to fit the given hours.
+- `startTime` optional, `"HH:mm"` 24h format — when the route departs. Used
+  together with time windows to decide arrival feasibility, and to compute
+  each leg's `arrivalTime` in the response.
 
 Response 200:
 ```json
 {
   "order": ["s1", "s3", "s2"],
   "legs": [
-    { "fromId": "s1", "toId": "s3", "distanceMeters": 1820, "durationSeconds": 340 },
-    { "fromId": "s3", "toId": "s2", "distanceMeters": 950,  "durationSeconds": 180 }
+    { "fromId": "s1", "toId": "s3", "distanceMeters": 1820, "durationSeconds": 340, "arrivalTime": "08:06" },
+    { "fromId": "s3", "toId": "s2", "distanceMeters": 950,  "durationSeconds": 180, "arrivalTime": "09:09" }
   ],
   "totalDistanceMeters": 2770,
   "totalDurationSeconds": 520,
@@ -87,5 +96,8 @@ Response 200:
 - `geometry` is the real road-following polyline from OSRM `/route` over the
   final order (not a straight-line join of the matrix result), in GeoJSON
   `LineString` form, `[lon, lat]` pairs.
+- `legs[].arrivalTime` (`"HH:mm"`) is present only when the request included
+  `startTime`. `legs[].lateSeconds` is present only when the leg's `toId` has
+  a time window and the computed arrival falls after it closes.
 - `400 { error: { code: "NOT_ENOUGH_STOPS" } }` if fewer than 2 stops.
 - `502 { error: { code: "UPSTREAM_UNAVAILABLE" } }` if OSRM is unreachable/errors.

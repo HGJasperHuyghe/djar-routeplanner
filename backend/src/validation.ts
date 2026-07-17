@@ -12,11 +12,18 @@ export const geocodeRequestSchema = z.object({
 
 export type GeocodeRequest = z.infer<typeof geocodeRequestSchema>;
 
+const hhmmSchema = z
+  .string()
+  .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "must be in HH:mm 24h format")
+  .optional();
+
 export const stopSchema = z.object({
   id: z.string().min(1),
   label: z.string().optional(),
   lat: z.number(),
   lon: z.number(),
+  timeWindowStart: hhmmSchema,
+  timeWindowEnd: hhmmSchema,
 });
 
 export const routeOptimizeRequestSchema = z.object({
@@ -24,6 +31,7 @@ export const routeOptimizeRequestSchema = z.object({
   startStopId: z.string().min(1).optional(),
   roundTrip: z.boolean().optional().default(false),
   lockOrder: z.boolean().optional().default(false),
+  startTime: hhmmSchema,
 });
 
 export type RouteOptimizeRequest = z.infer<typeof routeOptimizeRequestSchema>;

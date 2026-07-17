@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { parseAddressesFromCsv } from '../lib/csvImport';
+import type { ParsedCsvRow } from '../lib/csvImport';
 import { geocodeAddress } from '../lib/api';
 import { ApiError } from '../types';
 import type { Stop } from '../types';
@@ -29,37 +30,66 @@ export function CsvImportDialog({ onImport }: CsvImportDialogProps) {
     setRows([]);
     setProcessed(0);
     importedStopsRef.current = [];
-    let addresses: string[];
+
+    if (/\.xlsx?$/i.test(file.name)) {
+      setError('Only CSV files are supported, not Excel (.xlsx/.xls). Save the file as CSV and try again.');
+      return;
+    }
+
+    let parsed: ParsedCsvRow[];
     try {
-      addresses = await parseAddressesFromCsv(file);
+      parsed = await parseAddressesFromCsv(file);
     } catch {
       setError('Could not read this CSV file. Make sure it is a plain text CSV.');
       return;
     }
-    if (addresses.length === 0) {
+    if (parsed.length === 0) {
       setError('No addresses found in this file.');
       return;
     }
 
-    const initialRows: RowResult[] = addresses.map((address) => ({ address, status: 'pending' }));
+    const initialRows: RowResult[] = parsed.map((r) => ({ address: r.address, status: 'pending' }));
     setRows(initialRows);
     setRunning(true);
 
     const collected: Stop[] = [];
-    for (let i = 0; i < addresses.length; i++) {
-      const address = addresses[i];
+    for (let i = 0; i < parsed.length; i++) {
+      const { address, timeWindowStart, timeWindowEnd } = parsed[i];
       try {
         const res = await geocodeAddress(address);
         if (res.matches.length > 0) {
           const top = res.matches[0];
-          collected.push({ id: generateId(), label: top.label, lat: top.lat, lon: top.lon });
+          collected.push({
+            id: generateId(),
+            label: top.label,
+            lat: top.lat,
+            lon: top.lon,
+            timeWindowStart,
+            timeWindowEnd,
+          });
           setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, status: 'ok' } : r)));
         } else {
-          collected.push({ id: generateId(), label: address, lat: NaN, lon: NaN, geocodeFailed: true });
+          collected.push({
+            id: generateId(),
+            label: address,
+            lat: NaN,
+            lon: NaN,
+            geocodeFailed: true,
+            timeWindowStart,
+            timeWindowEnd,
+          });
           setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, status: 'failed' } : r)));
         }
       } catch {
-        collected.push({ id: generateId(), label: address, lat: NaN, lon: NaN, geocodeFailed: true });
+        collected.push({
+          id: generateId(),
+          label: address,
+          lat: NaN,
+          lon: NaN,
+          geocodeFailed: true,
+          timeWindowStart,
+          timeWindowEnd,
+        });
         setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, status: 'failed' } : r)));
       }
       setProcessed(i + 1);
@@ -102,7 +132,9 @@ export function CsvImportDialog({ onImport }: CsvImportDialogProps) {
             </div>
 
             <p className="mb-3 text-body-md text-on-surface-variant">
-              One address per row (first column is used). Each row is geocoded one at a time against the server.
+              One address per row. Address parts split across columns (street, postcode, city, …) are combined
+              automatically, as are optional pickup-window columns (e.g. "van"/"tot" or "09:00-12:00"). CSV only —
+              not Excel (.xlsx).
             </p>
 
             <input

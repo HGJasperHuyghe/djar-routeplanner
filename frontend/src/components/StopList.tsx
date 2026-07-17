@@ -23,9 +23,13 @@ export function StopList({ stops, depotId, route, onRemove, onSetDepot, onUpdate
 
   const visitOrder = new Map<string, number>();
   const legFrom = new Map<string, { distanceMeters: number; durationSeconds: number }>();
+  const arrivalAt = new Map<string, { arrivalTime?: string; lateSeconds?: number }>();
   if (route) {
     route.order.forEach((id, idx) => visitOrder.set(id, idx + 1));
-    route.legs.forEach((leg) => legFrom.set(leg.fromId, { distanceMeters: leg.distanceMeters, durationSeconds: leg.durationSeconds }));
+    route.legs.forEach((leg) => {
+      legFrom.set(leg.fromId, { distanceMeters: leg.distanceMeters, durationSeconds: leg.durationSeconds });
+      arrivalAt.set(leg.toId, { arrivalTime: leg.arrivalTime, lateSeconds: leg.lateSeconds });
+    });
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -57,6 +61,8 @@ export function StopList({ stops, depotId, route, onRemove, onSetDepot, onUpdate
             draggable={false}
             legDistanceMeters={legFrom.get(depot.id)?.distanceMeters}
             legDurationSeconds={legFrom.get(depot.id)?.durationSeconds}
+            arrivalTime={arrivalAt.get(depot.id)?.arrivalTime}
+            lateSeconds={arrivalAt.get(depot.id)?.lateSeconds}
             onRemove={onRemove}
             onSetDepot={onSetDepot}
             onUpdate={onUpdate}
@@ -76,6 +82,8 @@ export function StopList({ stops, depotId, route, onRemove, onSetDepot, onUpdate
                 draggable
                 legDistanceMeters={legFrom.get(stop.id)?.distanceMeters}
                 legDurationSeconds={legFrom.get(stop.id)?.durationSeconds}
+                arrivalTime={arrivalAt.get(stop.id)?.arrivalTime}
+                lateSeconds={arrivalAt.get(stop.id)?.lateSeconds}
                 onRemove={onRemove}
                 onSetDepot={onSetDepot}
                 onUpdate={onUpdate}

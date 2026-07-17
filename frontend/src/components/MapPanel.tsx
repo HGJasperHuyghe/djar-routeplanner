@@ -59,7 +59,7 @@ export function MapPanel({ stops, route, depotId, mapContainerRef }: MapPanelPro
   const containerRef = mapContainerRef ?? internalRef;
 
   return (
-    <div ref={containerRef} className="djar-card overflow-hidden" style={{ height: '480px' }}>
+    <div ref={containerRef} className="djar-card isolate overflow-hidden" style={{ height: '480px' }}>
       <MapContainer center={[52.37, 4.9]} zoom={12} scrollWheelZoom style={{ height: '100%', width: '100%' }}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
