@@ -4,6 +4,8 @@ import { ApiError } from '../types';
 import type { GeocodeMatch, Stop } from '../types';
 import { generateId } from '../lib/format';
 import { ErrorBanner } from './ErrorBanner';
+import { AddressSuggestions } from './AddressSuggestions';
+import { useAddressAutocomplete } from '../hooks/useAddressAutocomplete';
 
 interface AddressFormProps {
   onAdd: (stop: Stop) => void;
@@ -15,13 +17,37 @@ export function AddressForm({ onAdd }: AddressFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [matches, setMatches] = useState<GeocodeMatch[] | null>(null);
   const [query, setQuery] = useState('');
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [highlighted, setHighlighted] = useState(-1);
+
+  const { suggestions, loading: suggestLoading, clear: clearSuggestions } = useAddressAutocomplete(
+    suggestionsOpen ? address : '',
+  );
+
+  function addMatch(match: GeocodeMatch) {
+    onAdd({ id: generateId(), label: match.label, lat: match.lat, lon: match.lon });
+    setAddress('');
+    setMatches(null);
+    setQuery('');
+    setSuggestionsOpen(false);
+    setHighlighted(-1);
+    clearSuggestions();
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!address.trim()) return;
+
+    // If a suggestion is highlighted (arrow-keyed) when Enter is pressed, use it directly.
+    if (suggestionsOpen && highlighted >= 0 && suggestions[highlighted]) {
+      addMatch(suggestions[highlighted]);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setMatches(null);
+    setSuggestionsOpen(false);
     try {
       const res = await geocodeAddress(address.trim());
       if (res.matches.length === 0) {
@@ -39,17 +65,24 @@ export function AddressForm({ onAdd }: AddressFormProps) {
     }
   }
 
-  function addMatch(match: GeocodeMatch) {
-    onAdd({ id: generateId(), label: match.label, lat: match.lat, lon: match.lon });
-    setAddress('');
-    setMatches(null);
-    setQuery('');
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!suggestionsOpen || suggestions.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlighted((h) => (h + 1) % suggestions.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlighted((h) => (h <= 0 ? suggestions.length - 1 : h - 1));
+    } else if (e.key === 'Escape') {
+      setSuggestionsOpen(false);
+      setHighlighted(-1);
+    }
   }
 
   return (
     <div className="djar-card p-4">
       <form onSubmit={handleSubmit} className="flex flex-col gap-2 sm:flex-row sm:items-end">
-        <div className="flex-1">
+        <div className="relative flex-1">
           <label htmlFor="address-input" className="djar-label mb-1 block">
             Add a stop
           </label>
@@ -59,8 +92,26 @@ export function AddressForm({ onAdd }: AddressFormProps) {
             className="djar-input"
             placeholder="e.g. Kalverstraat 1, Amsterdam"
             value={address}
-            onChange={(e) => setAddress(e.target.value)}
+            autoComplete="off"
+            onChange={(e) => {
+              setAddress(e.target.value);
+              setSuggestionsOpen(true);
+              setHighlighted(-1);
+              setMatches(null);
+              setError(null);
+            }}
+            onKeyDown={handleKeyDown}
+            onFocus={() => setSuggestionsOpen(true)}
+            onBlur={() => setTimeout(() => setSuggestionsOpen(false), 150)}
           />
+          {suggestionsOpen && (
+            <AddressSuggestions
+              suggestions={suggestions}
+              loading={suggestLoading}
+              highlighted={highlighted}
+              onSelect={addMatch}
+            />
+          )}
         </div>
         <button type="submit" className="djar-btn-primary" disabled={loading || !address.trim()}>
           {loading ? 'Geocoding…' : 'Add stop'}

@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { Stop } from '../types';
+import type { GeocodeMatch, Stop } from '../types';
 import { geocodeAddress } from '../lib/api';
 import { ApiError } from '../types';
 import { formatDistanceKm, formatDuration } from '../lib/format';
+import { AddressSuggestions } from './AddressSuggestions';
+import { useAddressAutocomplete } from '../hooks/useAddressAutocomplete';
 
 interface StopListItemProps {
   stop: Stop;
@@ -41,6 +43,11 @@ export function StopListItem({
   const [fixAddress, setFixAddress] = useState(stop.label);
   const [fixError, setFixError] = useState<string | null>(null);
   const [fixLoading, setFixLoading] = useState(false);
+  const [fixSuggestionsOpen, setFixSuggestionsOpen] = useState(false);
+  const [fixHighlighted, setFixHighlighted] = useState(-1);
+
+  const { suggestions: fixSuggestions, loading: fixSuggestLoading, clear: clearFixSuggestions } =
+    useAddressAutocomplete(fixSuggestionsOpen ? fixAddress : '');
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -48,24 +55,51 @@ export function StopListItem({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  function applyFix(match: GeocodeMatch) {
+    onUpdate(stop.id, { label: match.label, lat: match.lat, lon: match.lon, geocodeFailed: false });
+    setFixing(false);
+    setFixSuggestionsOpen(false);
+    setFixHighlighted(-1);
+    clearFixSuggestions();
+  }
+
   async function handleFixSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!fixAddress.trim()) return;
+
+    if (fixSuggestionsOpen && fixHighlighted >= 0 && fixSuggestions[fixHighlighted]) {
+      applyFix(fixSuggestions[fixHighlighted]);
+      return;
+    }
+
     setFixLoading(true);
     setFixError(null);
+    setFixSuggestionsOpen(false);
     try {
       const res = await geocodeAddress(fixAddress.trim());
       if (res.matches.length === 0) {
         setFixError('Still no match found. Try a different address.');
         return;
       }
-      const top = res.matches[0];
-      onUpdate(stop.id, { label: top.label, lat: top.lat, lon: top.lon, geocodeFailed: false });
-      setFixing(false);
+      applyFix(res.matches[0]);
     } catch (err) {
       setFixError(err instanceof ApiError ? err.message : 'Failed to geocode this address.');
     } finally {
       setFixLoading(false);
+    }
+  }
+
+  function handleFixKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!fixSuggestionsOpen || fixSuggestions.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setFixHighlighted((h) => (h + 1) % fixSuggestions.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setFixHighlighted((h) => (h <= 0 ? fixSuggestions.length - 1 : h - 1));
+    } else if (e.key === 'Escape') {
+      setFixSuggestionsOpen(false);
+      setFixHighlighted(-1);
     }
   }
 
@@ -167,13 +201,31 @@ export function StopListItem({
 
       {fixing && (
         <form onSubmit={handleFixSubmit} className="flex items-center gap-2 border-t border-outline-variant pt-2">
-          <input
-            type="text"
-            className="djar-input"
-            value={fixAddress}
-            onChange={(e) => setFixAddress(e.target.value)}
-            placeholder="Corrected address"
-          />
+          <div className="relative flex-1">
+            <input
+              type="text"
+              className="djar-input"
+              value={fixAddress}
+              autoComplete="off"
+              onChange={(e) => {
+                setFixAddress(e.target.value);
+                setFixSuggestionsOpen(true);
+                setFixHighlighted(-1);
+              }}
+              onKeyDown={handleFixKeyDown}
+              onFocus={() => setFixSuggestionsOpen(true)}
+              onBlur={() => setTimeout(() => setFixSuggestionsOpen(false), 150)}
+              placeholder="Corrected address"
+            />
+            {fixSuggestionsOpen && (
+              <AddressSuggestions
+                suggestions={fixSuggestions}
+                loading={fixSuggestLoading}
+                highlighted={fixHighlighted}
+                onSelect={applyFix}
+              />
+            )}
+          </div>
           <button type="submit" className="djar-btn-primary shrink-0" disabled={fixLoading}>
             {fixLoading ? 'Checking…' : 'Retry'}
           </button>
