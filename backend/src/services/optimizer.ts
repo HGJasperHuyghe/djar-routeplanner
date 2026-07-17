@@ -188,9 +188,13 @@ function twoOptImprove(
 ): number[] {
   const n = initialTour.length;
   let tour = initialTour.slice();
-  if (n < 4) {
-    // 2-opt needs at least 4 nodes to have a meaningful non-trivial swap;
-    // fewer than that, the nearest-neighbor tour is already optimal.
+  if (n < 3) {
+    // With a fixed start and at most one other node, there's only one
+    // possible tour — nothing to reorder. With exactly 3 nodes (start + 2)
+    // there IS a real choice (swap the two non-start stops), which matters
+    // once a cost function can prefer one order over the other for reasons
+    // other than raw distance (e.g. a deadline the greedy construction's
+    // one-step-ahead scoring can miss) — so that case must still run below.
     return tour;
   }
 

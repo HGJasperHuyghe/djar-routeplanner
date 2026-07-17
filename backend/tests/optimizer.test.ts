@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { optimize } from "../src/services/optimizer";
+import { optimize, TimeWindow } from "../src/services/optimizer";
 
 /**
  * Computes total cost of traversing `order` (a permutation of matrix indices)
@@ -142,5 +142,28 @@ describe("optimize", () => {
   it("handles trivial sizes (0 and 1 nodes)", () => {
     expect(optimize([], 0, false)).toEqual([]);
     expect(optimize([[0]], 0, false)).toEqual([0]);
+  });
+
+  it("reorders even a 3-node tour to respect a deadline the greedy construction misses", () => {
+    // Node 1 is closer (nearest-neighbor's naive first pick); node 2 is
+    // farther but has a tight deadline that visiting it second would blow
+    // (arriving at 90s vs a 40s deadline) while visiting it FIRST meets it
+    // comfortably (arriving at 30s). A single greedy construction step can't
+    // see that trade-off — only reordering (2-opt) among all 3 nodes can.
+    const distances = [
+      [0, 1, 50],
+      [1, 0, 50],
+      [50, 50, 0],
+    ];
+    const durations = [
+      [0, 10, 30],
+      [10, 0, 80],
+      [30, 80, 0],
+    ];
+    const windows: (TimeWindow | null)[] = [null, null, { earliestSeconds: 0, latestSeconds: 40 }];
+
+    const order = optimize(distances, 0, false, { durations, windows, startTimeSeconds: 0 });
+
+    expect(order).toEqual([0, 2, 1]);
   });
 });
