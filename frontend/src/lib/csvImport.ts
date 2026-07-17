@@ -17,14 +17,58 @@ const WINDOW_RANGE_HEADERS = ['tijdvak', 'tijdslot', 'venster', 'window', 'uren'
 
 function normalizeHeader(cell: string): string {
   return cell
+    .replace(/^﻿/, '') // strip a UTF-8 BOM some exports (Excel) leave on the first cell
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .trim()
     .toLowerCase();
 }
 
+/** True if `header` contains `candidate` as a whole word, e.g. "Volledige adres" matches "adres". */
 function matchesAny(header: string, candidates: string[]): boolean {
-  return candidates.includes(header);
+  return candidates.some((c) => new RegExp(`\\b${c}\\b`).test(header));
+}
+
+/**
+ * Cleans a single CSV cell that may itself contain a multi-line address block
+ * (common in CRM "full address" exports: company name, then street, then a
+ * blank line, then postcode/city/country all inside one quoted cell). Blank
+ * lines are dropped; if some lines contain a digit (street number, postcode)
+ * and others don't (company/country name noise), only the digit-bearing
+ * lines are kept, since those are what a geocoder actually needs.
+ */
+function cleanAddressCell(cell: string): string {
+  const rawLines = cell
+    .split(/\r?\n/)
+    // Belgian/Dutch exports often prefix the postcode with a country letter
+    // code glued on with a hyphen (e.g. "B-9810 Eke"); Nominatim can't parse
+    // "B-9810" as a token but resolves the plain postcode fine.
+    .map((l) => l.trim().replace(/\b[A-Z]{1,3}-(\d{3,6})\b/g, '$1'))
+    .filter((l) => l.length > 0);
+
+  // A "Bus 2" / "Bte 4" / "Box 1" mailbox/unit suffix doesn't help a geocoder
+  // find the building (only the street + house number does, and Nominatim
+  // reliably fails to match once one is present) — drop it entirely.
+  const lines = rawLines.filter((l) => !/^(bus|bte|box)\s*\d+$/i.test(l));
+  if (lines.length === 0) return '';
+
+  const withDigits = lines.filter((l) => /\d/.test(l));
+  const kept = withDigits.length > 0 ? withDigits : lines;
+
+  // Some exports repeat "postcode city" as its own line even though it's
+  // already part of an earlier line — drop consecutive duplicate segments.
+  const segments = kept.join(', ').split(', ');
+  const deduped = segments.filter((s, i) => i === 0 || s.toLowerCase() !== segments[i - 1].toLowerCase());
+  let address = deduped.join(', ');
+
+  // Legacy addresses sometimes append an old district number after the city
+  // (e.g. "1000 Brussel 1"); once a real postcode is present, that trailing
+  // number is redundant and breaks the geocoder, so drop it.
+  if (/\b\d{4}\b/.test(address)) {
+    address = address.replace(/\s+\d{1,2}$/, '');
+  }
+
+  return address;
 }
 
 /** Splits a "09:00-12:00" / "09:00 tot 12:00" style cell into [start, end]. */
@@ -113,11 +157,14 @@ export function parseAddressesFromCsv(file: File): Promise<ParsedCsvRow[]> {
 
             if (roles && roles.address.length > 0) {
               address = roles.address
-                .map((i) => cells[i])
-                .filter((v) => v && v.length > 0)
+                .map((i) => cleanAddressCell(cells[i] ?? ''))
+                .filter((v) => v.length > 0)
                 .join(', ');
             } else {
-              address = cells.filter((v) => v.length > 0).join(', ');
+              address = cells
+                .map((v) => cleanAddressCell(v))
+                .filter((v) => v.length > 0)
+                .join(', ');
             }
 
             if (roles?.windowRange != null) {

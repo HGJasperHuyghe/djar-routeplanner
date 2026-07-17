@@ -37,7 +37,6 @@ export function StopListItem({
     id: stop.id,
     disabled: !draggable,
   });
-  const [editingWindow, setEditingWindow] = useState(false);
   const [fixing, setFixing] = useState(false);
   const [fixAddress, setFixAddress] = useState(stop.label);
   const [fixError, setFixError] = useState<string | null>(null);
@@ -98,11 +97,6 @@ export function StopListItem({
         <div className="min-w-0 flex-1">
           <p className="truncate text-body-md text-on-surface">{stop.label}</p>
           {stop.geocodeFailed && <span className="djar-chip-error mt-1 inline-block">Not geocoded</span>}
-          {(stop.timeWindowStart || stop.timeWindowEnd) && (
-            <p className="text-label-sm text-on-surface-variant">
-              Window: {stop.timeWindowStart ?? '…'}–{stop.timeWindowEnd ?? '…'}
-            </p>
-          )}
           {arrivalTime && (
             <p className={`text-label-sm ${lateSeconds ? 'text-error' : 'text-on-surface-variant'}`}>
               Arrives {arrivalTime}
@@ -131,14 +125,6 @@ export function StopListItem({
               Set depot
             </button>
           )}
-          <button
-            type="button"
-            onClick={() => setEditingWindow((v) => !v)}
-            className="text-label-sm font-heading uppercase tracking-wide text-deep-teal hover:underline"
-            title="Set the hours this stop can be visited"
-          >
-            Window
-          </button>
           {stop.geocodeFailed && (
             <button
               type="button"
@@ -158,37 +144,36 @@ export function StopListItem({
         </div>
       </div>
 
-      {editingWindow && (
-        <div className="flex flex-wrap items-center gap-3 border-t border-outline-variant pt-2">
-          <label className="flex items-center gap-1 text-label-sm text-on-surface-variant">
-            From
-            <input
-              type="time"
-              className="djar-input w-auto py-1"
-              value={stop.timeWindowStart ?? ''}
-              onChange={(e) => onUpdate(stop.id, { timeWindowStart: e.target.value || undefined })}
-            />
-          </label>
-          <label className="flex items-center gap-1 text-label-sm text-on-surface-variant">
-            To
-            <input
-              type="time"
-              className="djar-input w-auto py-1"
-              value={stop.timeWindowEnd ?? ''}
-              onChange={(e) => onUpdate(stop.id, { timeWindowEnd: e.target.value || undefined })}
-            />
-          </label>
-          {(stop.timeWindowStart || stop.timeWindowEnd) && (
-            <button
-              type="button"
-              onClick={() => onUpdate(stop.id, { timeWindowStart: undefined, timeWindowEnd: undefined })}
-              className="text-label-sm font-heading uppercase tracking-wide text-error hover:underline"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-      )}
+      <div className="flex flex-wrap items-center gap-3 border-t border-outline-variant pt-2">
+        <span className="djar-label shrink-0">Pickup window</span>
+        <label className="flex items-center gap-1 text-label-sm text-on-surface-variant">
+          From
+          <input
+            type="time"
+            className="djar-input w-auto py-1"
+            value={stop.timeWindowStart ?? ''}
+            onChange={(e) => onUpdate(stop.id, { timeWindowStart: e.target.value || undefined })}
+          />
+        </label>
+        <label className="flex items-center gap-1 text-label-sm text-on-surface-variant">
+          To
+          <input
+            type="time"
+            className="djar-input w-auto py-1"
+            value={stop.timeWindowEnd ?? ''}
+            onChange={(e) => onUpdate(stop.id, { timeWindowEnd: e.target.value || undefined })}
+          />
+        </label>
+        {(stop.timeWindowStart || stop.timeWindowEnd) && (
+          <button
+            type="button"
+            onClick={() => onUpdate(stop.id, { timeWindowStart: undefined, timeWindowEnd: undefined })}
+            className="text-label-sm font-heading uppercase tracking-wide text-error hover:underline"
+          >
+            Clear
+          </button>
+        )}
+      </div>
 
       {fixing && (
         <form onSubmit={handleFixSubmit} className="flex items-center gap-2 border-t border-outline-variant pt-2">
