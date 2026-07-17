@@ -54,7 +54,7 @@ export function CsvImportDialog({ onImport }: CsvImportDialogProps) {
 
     const collected: Stop[] = [];
     for (let i = 0; i < parsed.length; i++) {
-      const { address, timeWindowStart, timeWindowEnd } = parsed[i];
+      const { address, deliveryTime } = parsed[i];
       try {
         const res = await geocodeAddress(address);
         if (res.matches.length > 0) {
@@ -64,8 +64,7 @@ export function CsvImportDialog({ onImport }: CsvImportDialogProps) {
             label: top.label,
             lat: top.lat,
             lon: top.lon,
-            timeWindowStart,
-            timeWindowEnd,
+            deliveryTime,
           });
           setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, status: 'ok' } : r)));
         } else {
@@ -75,8 +74,7 @@ export function CsvImportDialog({ onImport }: CsvImportDialogProps) {
             lat: NaN,
             lon: NaN,
             geocodeFailed: true,
-            timeWindowStart,
-            timeWindowEnd,
+            deliveryTime,
           });
           setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, status: 'failed' } : r)));
         }
@@ -87,8 +85,7 @@ export function CsvImportDialog({ onImport }: CsvImportDialogProps) {
           lat: NaN,
           lon: NaN,
           geocodeFailed: true,
-          timeWindowStart,
-          timeWindowEnd,
+          deliveryTime,
         });
         setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, status: 'failed' } : r)));
       }
@@ -133,8 +130,8 @@ export function CsvImportDialog({ onImport }: CsvImportDialogProps) {
 
             <p className="mb-3 text-body-md text-on-surface-variant">
               One address per row. Address parts split across columns (street, postcode, city, …) are combined
-              automatically, as are optional pickup-window columns (e.g. "van"/"tot" or "09:00-12:00"). CSV only —
-              not Excel (.xlsx).
+              automatically, as is an optional delivery-time column (e.g. "leveruur"/"tijdstip" or "09:00-12:00").
+              CSV only — not Excel (.xlsx).
             </p>
 
             <input

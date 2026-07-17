@@ -100,7 +100,7 @@ export function StopListItem({
           {arrivalTime && (
             <p className={`text-label-sm ${lateSeconds ? 'text-error' : 'text-on-surface-variant'}`}>
               Arrives {arrivalTime}
-              {lateSeconds ? ` (${Math.round(lateSeconds / 60)} min after window closes)` : ''}
+              {lateSeconds ? ` (${Math.round(lateSeconds / 60)} min after delivery time)` : ''}
             </p>
           )}
           {(legDistanceMeters != null || legDurationSeconds != null) && (
@@ -145,29 +145,19 @@ export function StopListItem({
       </div>
 
       <div className="flex flex-wrap items-center gap-3 border-t border-outline-variant pt-2">
-        <span className="djar-label shrink-0">Pickup window</span>
         <label className="flex items-center gap-1 text-label-sm text-on-surface-variant">
-          From
+          <span className="djar-label">Deliver by</span>
           <input
             type="time"
             className="djar-input w-auto py-1"
-            value={stop.timeWindowStart ?? ''}
-            onChange={(e) => onUpdate(stop.id, { timeWindowStart: e.target.value || undefined })}
+            value={stop.deliveryTime ?? ''}
+            onChange={(e) => onUpdate(stop.id, { deliveryTime: e.target.value || undefined })}
           />
         </label>
-        <label className="flex items-center gap-1 text-label-sm text-on-surface-variant">
-          To
-          <input
-            type="time"
-            className="djar-input w-auto py-1"
-            value={stop.timeWindowEnd ?? ''}
-            onChange={(e) => onUpdate(stop.id, { timeWindowEnd: e.target.value || undefined })}
-          />
-        </label>
-        {(stop.timeWindowStart || stop.timeWindowEnd) && (
+        {stop.deliveryTime && (
           <button
             type="button"
-            onClick={() => onUpdate(stop.id, { timeWindowStart: undefined, timeWindowEnd: undefined })}
+            onClick={() => onUpdate(stop.id, { deliveryTime: undefined })}
             className="text-label-sm font-heading uppercase tracking-wide text-error hover:underline"
           >
             Clear

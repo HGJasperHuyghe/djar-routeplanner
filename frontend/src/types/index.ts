@@ -8,9 +8,8 @@ export interface Stop {
   lon: number;
   /** Client-side only: true if geocoding failed for this row (CSV import) and needs manual fixing. */
   geocodeFailed?: boolean;
-  /** Optional pickup/delivery window at this stop, "HH:mm" 24h format. */
-  timeWindowStart?: string;
-  timeWindowEnd?: string;
+  /** Optional deadline this stop must be reached by, "HH:mm" 24h format. */
+  deliveryTime?: string;
 }
 
 export interface GeocodeMatch {
@@ -31,7 +30,7 @@ export interface RouteLeg {
   durationSeconds: number;
   /** Estimated arrival at `toId`, "HH:mm", present only when a route start time was given. */
   arrivalTime?: string;
-  /** Seconds arrival at `toId` falls after that stop's time window, if it has one and is missed. */
+  /** Seconds arrival at `toId` falls after that stop's delivery time, if it has one and is missed. */
   lateSeconds?: number;
 }
 
@@ -54,13 +53,12 @@ export interface OptimizeRequest {
     label: string;
     lat: number;
     lon: number;
-    timeWindowStart?: string;
-    timeWindowEnd?: string;
+    deliveryTime?: string;
   }[];
   startStopId?: string;
   roundTrip?: boolean;
   lockOrder?: boolean;
-  /** Route departure time, "HH:mm" 24h format. Used to evaluate/optimize against stop time windows. */
+  /** Route departure time, "HH:mm" 24h format. Used to evaluate/optimize against stop delivery times. */
   startTime?: string;
 }
 

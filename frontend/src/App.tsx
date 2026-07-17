@@ -93,7 +93,7 @@ export default function App() {
                 </div>
               </div>
               <p className="text-label-sm text-on-surface-variant">
-                Stops with a pickup window are re-ordered to fit their hours — set a window per stop below.
+                Stops with a delivery time are re-ordered to arrive on time — set a "Deliver by" time per stop below.
               </p>
 
               {!depotId && stops.length > 0 && (

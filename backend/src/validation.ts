@@ -22,8 +22,7 @@ export const stopSchema = z.object({
   label: z.string().optional(),
   lat: z.number(),
   lon: z.number(),
-  timeWindowStart: hhmmSchema,
-  timeWindowEnd: hhmmSchema,
+  deliveryTime: hhmmSchema,
 });
 
 export const routeOptimizeRequestSchema = z.object({

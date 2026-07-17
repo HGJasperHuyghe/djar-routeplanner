@@ -2,8 +2,7 @@ import Papa from 'papaparse';
 
 export interface ParsedCsvRow {
   address: string;
-  timeWindowStart?: string;
-  timeWindowEnd?: string;
+  deliveryTime?: string;
 }
 
 const ADDRESS_HEADERS = ['adres', 'address', 'straat', 'street', 'straatnaam'];
@@ -11,9 +10,26 @@ const HOUSE_NUMBER_HEADERS = ['huisnummer', 'huisnr', 'nr', 'nummer', 'number', 
 const POSTCODE_HEADERS = ['postcode', 'zip', 'zipcode', 'postalcode'];
 const CITY_HEADERS = ['plaats', 'stad', 'city', 'gemeente', 'woonplaats'];
 const COUNTRY_HEADERS = ['land', 'country'];
-const WINDOW_START_HEADERS = ['van', 'vanaf', 'start', 'from', 'opening', 'begin'];
-const WINDOW_END_HEADERS = ['tot', 'einde', 'end', 'until', 'sluiting'];
-const WINDOW_RANGE_HEADERS = ['tijdvak', 'tijdslot', 'venster', 'window', 'uren', 'openingstijden'];
+const DELIVERY_TIME_HEADERS = [
+  'leveruur',
+  'levertijd',
+  'afhaaltijd',
+  'afleveruur',
+  'tijdstip',
+  'deadline',
+  'tijd',
+  'uur',
+  'tot',
+  'deliverytime',
+  'pickuptime',
+  'time',
+  'tijdvak',
+  'tijdslot',
+  'venster',
+  'window',
+  'uren',
+  'openingstijden',
+];
 
 function normalizeHeader(cell: string): string {
   return cell
@@ -71,27 +87,28 @@ function cleanAddressCell(cell: string): string {
   return address;
 }
 
-/** Splits a "09:00-12:00" / "09:00 tot 12:00" style cell into [start, end]. */
-function splitTimeRange(cell: string): { start?: string; end?: string } {
-  const match = /(\d{1,2}[:.]\d{2}).{1,6}?(\d{1,2}[:.]\d{2})/.exec(cell);
-  if (!match) return {};
-  return { start: match[1].replace('.', ':'), end: match[2].replace('.', ':') };
+/**
+ * Extracts a single delivery-time deadline from a cell. A "09:00-12:00" /
+ * "09:00 tot 12:00" style range yields its end (the deadline); a plain
+ * "12:00" cell is used as-is.
+ */
+function extractDeliveryTime(cell: string): string | undefined {
+  const range = /(\d{1,2}[:.]\d{2}).{1,6}?(\d{1,2}[:.]\d{2})/.exec(cell);
+  if (range) return range[2].replace('.', ':');
+  const single = /(\d{1,2}[:.]\d{2})/.exec(cell);
+  return single ? single[1].replace('.', ':') : undefined;
 }
 
 interface ColumnRoles {
   address: number[];
-  windowStart: number | null;
-  windowEnd: number | null;
-  windowRange: number | null;
+  deliveryTime: number | null;
 }
 
 function detectHeaderRoles(headerRow: string[]): ColumnRoles | null {
   const normalized = headerRow.map(normalizeHeader);
 
   const addressCols: number[] = [];
-  let windowStart: number | null = null;
-  let windowEnd: number | null = null;
-  let windowRange: number | null = null;
+  let deliveryTime: number | null = null;
   let recognizedAny = false;
 
   normalized.forEach((header, idx) => {
@@ -107,31 +124,25 @@ function detectHeaderRoles(headerRow: string[]): ColumnRoles | null {
     ) {
       addressCols.push(idx);
       recognizedAny = true;
-    } else if (matchesAny(header, WINDOW_START_HEADERS)) {
-      windowStart = idx;
-      recognizedAny = true;
-    } else if (matchesAny(header, WINDOW_END_HEADERS)) {
-      windowEnd = idx;
-      recognizedAny = true;
-    } else if (matchesAny(header, WINDOW_RANGE_HEADERS)) {
-      windowRange = idx;
+    } else if (matchesAny(header, DELIVERY_TIME_HEADERS)) {
+      deliveryTime = idx;
       recognizedAny = true;
     }
   });
 
   if (!recognizedAny) return null;
-  return { address: addressCols, windowStart, windowEnd, windowRange };
+  return { address: addressCols, deliveryTime };
 }
 
 /**
- * Parse a CSV file client-side into address + optional time-window rows.
+ * Parse a CSV file client-side into address + optional delivery-time rows.
  *
  * If the first row looks like a header (contains recognizable column names
- * such as "adres"/"postcode"/"plaats" or "van"/"tot"), the relevant columns
- * are combined into a single address string and any time-window columns are
- * picked up. Otherwise every non-empty cell in the row is joined (rather than
- * only the first column), since many address exports split street/postcode/
- * city across separate columns without a header.
+ * such as "adres"/"postcode"/"plaats" or "leveruur"/"tijdstip"), the relevant
+ * columns are combined into a single address string and any delivery-time
+ * column is picked up. Otherwise every non-empty cell in the row is joined
+ * (rather than only the first column), since many address exports split
+ * street/postcode/city across separate columns without a header.
  */
 export function parseAddressesFromCsv(file: File): Promise<ParsedCsvRow[]> {
   return new Promise((resolve, reject) => {
@@ -152,9 +163,6 @@ export function parseAddressesFromCsv(file: File): Promise<ParsedCsvRow[]> {
             const cells = row.map((c) => (c ?? '').toString().trim());
 
             let address: string;
-            let timeWindowStart: string | undefined;
-            let timeWindowEnd: string | undefined;
-
             if (roles && roles.address.length > 0) {
               address = roles.address
                 .map((i) => cleanAddressCell(cells[i] ?? ''))
@@ -167,19 +175,10 @@ export function parseAddressesFromCsv(file: File): Promise<ParsedCsvRow[]> {
                 .join(', ');
             }
 
-            if (roles?.windowRange != null) {
-              const { start, end } = splitTimeRange(cells[roles.windowRange] ?? '');
-              timeWindowStart = start;
-              timeWindowEnd = end;
-            }
-            if (roles?.windowStart != null && cells[roles.windowStart]) {
-              timeWindowStart = cells[roles.windowStart];
-            }
-            if (roles?.windowEnd != null && cells[roles.windowEnd]) {
-              timeWindowEnd = cells[roles.windowEnd];
-            }
+            const deliveryTime =
+              roles?.deliveryTime != null ? extractDeliveryTime(cells[roles.deliveryTime] ?? '') : undefined;
 
-            return { address, timeWindowStart, timeWindowEnd };
+            return { address, deliveryTime };
           })
           .filter((r) => r.address.length > 0);
 

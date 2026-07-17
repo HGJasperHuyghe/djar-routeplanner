@@ -28,16 +28,13 @@ routeOptimizeRouter.post("/route/optimize", async (req, res, next) => {
       );
     }
 
+    // A stop's `deliveryTime` is treated as a deadline (must arrive by then,
+    // arriving earlier is always fine) — internally that's just a time
+    // window with no lower bound.
     const windowByStopId = new Map<string, TimeWindow | null>(
       stops.map((s) => {
-        if (!s.timeWindowStart && !s.timeWindowEnd) return [s.id, null];
-        return [
-          s.id,
-          {
-            earliestSeconds: parseHHMM(s.timeWindowStart) ?? 0,
-            latestSeconds: parseHHMM(s.timeWindowEnd) ?? 24 * 3600,
-          },
-        ];
+        if (!s.deliveryTime) return [s.id, null];
+        return [s.id, { earliestSeconds: 0, latestSeconds: parseHHMM(s.deliveryTime) ?? 24 * 3600 }];
       })
     );
     const startTimeSeconds = parseHHMM(startTime) ?? 0;

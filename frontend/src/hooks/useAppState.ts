@@ -125,13 +125,12 @@ export function useAppState() {
       setOptimizing(true);
       setOptimizeError(null);
       try {
-        const stopsPayload = state.stops.map(({ id, label, lat, lon, timeWindowStart, timeWindowEnd }) => ({
+        const stopsPayload = state.stops.map(({ id, label, lat, lon, deliveryTime }) => ({
           id,
           label,
           lat,
           lon,
-          timeWindowStart,
-          timeWindowEnd,
+          deliveryTime,
         }));
         const result = await optimizeRoute({
           stops: stopsPayload,
@@ -186,13 +185,12 @@ export function useAppState() {
       setOptimizing(true);
       setOptimizeError(null);
       try {
-        const stopsPayload = newStops.map(({ id, label, lat, lon, timeWindowStart, timeWindowEnd }) => ({
+        const stopsPayload = newStops.map(({ id, label, lat, lon, deliveryTime }) => ({
           id,
           label,
           lat,
           lon,
-          timeWindowStart,
-          timeWindowEnd,
+          deliveryTime,
         }));
         const result = await optimizeRoute({
           stops: stopsPayload,
